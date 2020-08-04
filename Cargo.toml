@@ -15,3 +15,5 @@ name = "toolbox"
 path = "src/lib.rs"
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
+once_cell = { version = "1.4" }
