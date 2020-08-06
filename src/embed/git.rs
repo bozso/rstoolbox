@@ -1,31 +1,66 @@
 use std::{
-    sync::{Mutex, LockResult},
     process::Command,
-    result::Result,
+    io,
+    result
 };
 
 use serde::{Serialize};
 use once_cell::sync::Lazy;
+use thiserror::Error as TError;
 
-static GIT: Lazy<Mutex<Command>> = Lazy::new(|| {
-    Mutex::new(Command::new("git"))
-});
+#[derive(Debug, TError)]
+pub enum Error {
+    #[error("io error occurred")]
+    IOError(#[from] io::Error),
+    
+    #[error("empty output recevied from command")]
+    EmptyOutput,
+}
 
+pub type Result<T> = result::Result<T, Error>;
 
-#[derive(Debug,Serialize)]
+pub struct Binary<'a> {
+    binary_name: &'a str,
+    separator: &'a str,
+}
+
+impl<'a> Binary<'a> {
+    pub fn new(binary_name: &'a str, separator: &'a str) -> Self {
+        Self {
+            binary_name: binary_name,
+            separator: separator,
+        }
+    }
+    
+    pub fn args(&self, args: &str) -> Command {
+        
+        let mut c = Command::new(self.binary_name);
+        c.args(args.split(self.separator));
+        
+        c
+    }
+}
+
+static GIT: Lazy<Binary> = Lazy::new(|| { Binary::new("git", " ")});
+
+#[derive(Debug, Serialize)]
 pub struct Info {
     branch: String,
     log: String
 }
 
+const AT: u8 = '@' as u8;
+
 impl Info {
-    pub fn in_current() -> LockResult<Self> {
-        let g = GIT.lock()?;
+    pub fn in_current() -> Result<Self> {
+        let url = GIT.args("config --get remote.origin.url").output()?;
+        let url = url.stdout
+                     .split(|c| *c == AT)
+                     .next().ok_or(Error::EmptyOutput)?;
         
-        g.arg("");
         
         Ok(Self {
-            branch: "".to_string(),
+            branch: format!("https://{:?}", &url),
             log: "".to_string(),
         })
     }
