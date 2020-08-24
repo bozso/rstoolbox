@@ -42,14 +42,12 @@ impl<T: PartialOrd> MinMax<T> {
 impl<T: PartialOrd + Copy> MinMax<T> {
     pub fn limit(&self, val: &T) -> T {
         if val <= &self.min {
-            return self.min;
+            self.min
+        } else if val >= &self.max {
+            self.max
+        } else {
+            *val
         }
-        
-        if val >= &self.max {
-            return self.max;
-        }
-        
-        *val
     }
 
     pub fn limit_mut(&self, val: &mut T) {
