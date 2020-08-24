@@ -1,5 +1,5 @@
 use std::cmp::PartialOrd;
-use crate::geometry::{MinMax, XY, Arithmetic};
+use crate::geometry::{MinMax, XY, AddSub};
 
 #[derive(Debug)]
 pub struct Region<T> {
@@ -16,7 +16,7 @@ impl<T> Region<T> {
     }
 }
 
-impl<T: Arithmetic<T>> Region<T> {
+impl<T: AddSub<T>> Region<T> {
     pub fn moved_xy(&self, x: T, y: T) -> Self {
         Self {
             x: self.x.shift(x),
@@ -29,7 +29,7 @@ impl<T: Arithmetic<T>> Region<T> {
     }
 }
 
-impl<T: Arithmetic<T> + Default> Region<T> {
+impl<T: AddSub<T> + Default> Region<T> {
     pub fn move_x(&self, x: T) -> Self {
         self.moved_xy(x, T::default())
     }

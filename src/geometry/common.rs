@@ -2,7 +2,7 @@ use std::{
     cmp::PartialOrd,
 };
 
-use crate::geometry::Arithmetic;
+use crate::geometry::AddSub;
 
 #[derive(Debug)]
 pub struct XY<T> {
@@ -17,7 +17,7 @@ pub struct MinMax<T> {
 }
 
 
-impl<T: Arithmetic<T>> MinMax<T> {
+impl<T: AddSub<T>> MinMax<T> {
     pub fn extend(&self, val: T) -> Self {
         Self {
             min: self.min - val,
@@ -36,5 +36,23 @@ impl<T: Arithmetic<T>> MinMax<T> {
 impl<T: PartialOrd> MinMax<T> {
     pub fn in_range(&self, val: &T) -> bool {
         &self.min >= val && val <= &self.max 
+    }
+}
+
+impl<T: PartialOrd + Copy> MinMax<T> {
+    pub fn limit(&self, val: &T) -> T {
+        if val <= &self.min {
+            return self.min;
+        }
+        
+        if val >= &self.max {
+            return self.max;
+        }
+        
+        *val
+    }
+
+    pub fn limit_mut(&self, val: &mut T) {
+        *val = self.limit(val)
     }
 }

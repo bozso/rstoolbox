@@ -5,9 +5,9 @@ use std::{
 mod common;
 mod region;
 
-pub trait Arithmetic<T> : 
-    Sub<Output = T> +
+pub trait AddSub<T> : 
     Add<Output = T> +
+    Sub<Output = T> +
     Copy {}
 
 pub use common::{XY, MinMax};
