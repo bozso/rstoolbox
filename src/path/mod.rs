@@ -1,83 +1,64 @@
 use std::{
-    ffi::OsStr,
     result,
+    path::PathBuf,
+    cmp::PartialEq
 };
 
 use thiserror::Error;
-use std::path::Path as StdPath;
-use std::path::PathBuf as StdPathBuf;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum Error {
     #[error("'{0}' is an invalid path")]
-    InvalidPath(StdPathBuf),
+    InvalidPath(PathBuf),
+    #[error("'{0}' is not a file")]
+    NotAFile(PathBuf),
 }
-
-/*
-impl<T: Like> From<&T> for Error {
-    fn from(p: &T) -> Self {
-        Self::InvalidPath(p.to_path_buf())
-    }
-}
-
-impl<T: Like> From<T> for Error {
-    fn from(p: T) -> Self {
-        Self::InvalidPath(p.to_path_buf())
-    }
-}
-*/
 
 type Result<T> = result::Result<T, Error>;
 
-pub trait Like : AsRef<StdPath> + Sized {
-    fn extension(&self) -> Option<&OsStr> {
-        self.as_ref().extension()
-    }
-    
-    fn to_path_buf(&self) -> StdPathBuf {
-        self.as_ref().to_path_buf()
-    }
-    
-    fn join<P: AsRef<StdPath>>(&self, path: P) -> StdPathBuf {
-        self.as_ref().join(path)
-    }
-    
-    fn exists(&self) -> bool {
-        self.as_ref().exists()
-    }
-    
-    fn to_valid(self) -> Result<Valid<Self>> {
-        //self.must_exist().map(Valid::new(self))?
-        
-        if !self.exists() {
-            Err(Error::InvalidPath(self.to_path_buf()))
-        } else {
-            Ok(Valid::new(self))
-        }
-        
-    }
+pub mod valid;
+mod like;
 
-    fn to_file(self) -> Result<valid::File<Self>> {
-        Ok(valid::File::new(self.to_valid()?))
+pub use like::Like;
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+    use crate::testing::{Case, Cases, Test};
+    
+    use super::*;
+    
+    struct MustExist<P: Like> {
+        path: P,
     }
     
-    fn must_exist(&self) -> Result<()> {
-        if !self.as_ref().exists() {
-            Err(Error::InvalidPath(self.to_path_buf()))
-        } else {
-            Ok(())
+    impl<P: Like + Copy> Test<P, Error> for MustExist<P> {
+        fn test(&self) -> Result<P> {
+            self.path.must_exist()
         }
     }
     
-    fn is_file(&self) -> bool {
-        self.as_ref().is_file()
+    #[test]
+    fn test_invalid() {
+        let p = &[
+            Path::new("does_not_exists.rs"),
+            Path::new("mod.rs"),
+        ];
+        
+        Cases::new(
+        &[
+            Case{
+                test: MustExist{path: p[0]},
+                //expected: Err(Error::InvalidPath(p[0].to_path_buf())),
+                expected: Ok(&p[1]),
+            },
+            
+            Case{
+                test: MustExist{path: p[1]},
+                //expected: Err(Error::InvalidPath(p[1].to_path_buf())),
+                expected: Ok(&p[1]),
+            },
+        ],
+        ).run();
     }
-    
-    /*
-    fn to_file(&self) -> Result<File, dyn 
-    */
 }
-
-mod valid;
-
-pub use valid::Valid;
