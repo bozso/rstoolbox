@@ -1,0 +1,14 @@
+# https://taskfile.dev
+
+version: '2'
+
+tasks:
+  build:
+    cmds:
+      - cargo build
+  test:
+    cmds:
+      - cargo test
+  defualt:
+    cmds:
+      - task: build
