@@ -47,14 +47,14 @@ impl Info {
         
         let url = g.args("config --get remote.origin.url").output()?;
         let url = url.stdout
-                     .split(|c| *c == AT)
+                     .split(|&c| c == AT)
                      .next().ok_or(Error::EmptyOutput)?;
         
         
         let branch = g.args("branch").output()?;
         let branch = branch.stdout
-            .split(|c| *c == NEWLINE)
-            .filter(|line| line.starts_with(b"*"))
+            .split(|&c| c == NEWLINE)
+            .filter(|&line| line.starts_with(b"*"))
             .next().ok_or(Error::EmptyOutput)?;
         
         Ok(Self {
