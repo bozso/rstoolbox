@@ -4,10 +4,6 @@ use std::{
     process::Command,
 };
 
-pub trait Creator {
-    fn args(&self, args: &str) -> Command;
-}
-
 #[derive(Clone, Copy)]
 pub struct Binary<'a> {
     binary_name: &'a str,

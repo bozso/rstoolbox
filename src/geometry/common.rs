@@ -10,6 +10,15 @@ pub struct XY<T> {
     pub y: T
 }
 
+impl<T> Into<XY<T>> for (T, T) {
+    fn into(self) -> XY<T> {
+        XY {
+            x: self.0,
+            y: self.1,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct MinMax<T> {
     pub min: T,

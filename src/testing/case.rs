@@ -1,23 +1,22 @@
 use std::{
-    error::Error,
-    result::Result,
+    error::Error as StdError,
+    result::Result as StdResult,
     cmp::PartialEq,
     fmt::Debug,
-    //marker::PhantomData,
 };
 
-pub trait Test<T, E: Error> {
-    fn test(&self) -> Result<T, E>;
+pub trait Test<T, E: StdError> {
+    fn test(&self) -> StdResult<T, E>;
 }
 
 pub struct Case<T, K, E>
 where
     T: PartialEq + Debug,
-    E: Error + PartialEq,
+    E: StdError + PartialEq,
     K: Test<T, E>
 {
     pub test: K,
-    pub expected: Result<T, E>,
+    pub expected: StdResult<T, E>,
 }
 
 use thiserror::Error as TError;
@@ -27,12 +26,10 @@ pub enum Error {
     
 }
 
-type Result = result::Result<(), Error>;
-
 impl<T, K, E> Case<T, K, E>
 where
     T: PartialEq + Debug,
-    E: Error + PartialEq,
+    E: StdError + PartialEq,
     K: Test<T, E>
 {
 
@@ -69,7 +66,7 @@ where
 pub struct Cases<'a, T, K, E>
 where
     T: PartialEq + Debug,
-    E: Error + PartialEq,
+    E: StdError + PartialEq,
     K: Test<T, E>
 {
     cases: &'a [Case<T, K, E>],
@@ -78,7 +75,7 @@ where
 impl<'a, T, K, E> Cases<'a, T, K, E>
 where
     T: PartialEq + Debug,
-    E: Error + PartialEq,
+    E: StdError + PartialEq,
     K: Test<T, E>
 {
     pub fn new(cases: &'a [Case<T, K, E>]) -> Self {
@@ -86,6 +83,6 @@ where
     }
     
     pub fn run(&self) {
-        let _ = self.cases.iter().map(|c| c.run()).collect::<_>();
+        self.cases.iter().for_each(|c| c.run());
     }
 }
