@@ -1,5 +1,3 @@
-mod bat;
-
 use structopt as so;
 
 #[derive(so::StructOpt, Debug)]

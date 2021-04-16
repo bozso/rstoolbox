@@ -12,5 +12,5 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 pub use config::Config;
 pub use task::Task;
 pub use download::Downloader;
-pub use extract::Extractor;
+//pub use extract::Extractor;
 pub use service::Service;
