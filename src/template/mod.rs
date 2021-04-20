@@ -10,9 +10,11 @@ mod service;
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("error occurred {0}")]
-    Any(Box<dyn std::error::Error>),
+    Any(Box<dyn std::error::Error + Sync + Send>),
     #[error("string parsing failed: {0}")]
     StringParse(#[from] std::string::FromUtf8Error),
+    #[error("failed to query shared data")]
+    MissingSharedData(#[from] crate::service::MissingSharedData)
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
