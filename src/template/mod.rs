@@ -1,8 +1,14 @@
 use std::{
     io::Write,
+    result::Result as StdResult,
 };
 
 use serde_json::Value;
+use crate::{
+    thread,
+};
+
+pub mod cli;
 
 mod tera;
 mod service;
@@ -14,32 +20,54 @@ pub enum Error {
     #[error("string parsing failed: {0}")]
     StringParse(#[from] std::string::FromUtf8Error),
     #[error("failed to query shared data")]
-    MissingSharedData(#[from] crate::service::MissingSharedData)
+    Service(#[from] crate::service::Error)
 }
+
+// impl thread::safe::Safe for Error {}
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub trait Context: From<Value> {}
+pub trait Context: Sized {
+    type Error;
+    fn from_value(obj: Value) -> StdResult<Self, Self::Error>;
+}
+
 
 pub trait Template {
-    type Error: std::error::Error;
+    type Error: std::error::Error + From<std::string::FromUtf8Error>;
+    type Ctx: Context;
 
-    fn render_to(&self, write: impl Write) -> Result<()>;
-    fn with_context<C: Context>(self, ctx: C) -> Self;
+    fn render_to(&self, ctx: Self::Ctx, write: impl Write) -> StdResult<(), Self::Error>;
 
-    fn render(&self) -> Result<String> {
+    fn render(&self, ctx: Self::Ctx) -> StdResult<String, Self::Error> {
         let mut s = Vec::<u8>::new();
-        self.render_to(&mut s)?;
+        self.render_to(ctx, &mut s)?;
         Ok(String::from_utf8(s)?)
     }
 }
+
+/*
+pub trait WithContext {
+    type Error;
+    type Ctx: Context;
+
+    fn render_to_impl(&self, ctx: Self::Ctx, write: impl Write) -> StdResult<(), Self::Error>;
+    fn render_to(&self, obj: Value, write: impl Write) -> StdResult<(), Self::Error> {
+        let ctx = Self::Ctx::from_value(obj)?;
+        self.render_to_impl(ctx, write)
+    }
+
+}
+*/
 
 pub trait Lookup {
     type Key;
     type Tpl: Template;
 
-    fn get(&mut self, key: &Self::Key) -> Result<Self::Tpl>;
-    fn with_context<C: Context>(&mut self, key: &Self::Key, ctx: C) -> Result<Self::Tpl> {
+    fn get(&mut self, key: Self::Key) -> Result<Self::Tpl>;
+    /*
+    fn with_context<C: Context, T: Template>(&mut self, key: Self::Key, ctx: C) -> Result<T> {
         Ok(self.get(key)?.with_context(ctx))
     }
+    */
 }

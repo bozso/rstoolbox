@@ -8,11 +8,29 @@ pub mod service;
 pub mod assets;
 pub mod template;
 
-pub trait ThreadSafe : Sync + Send {}
+pub mod thread {
+    pub mod safe {
+        pub trait Safe : Sync + Send {}
+        pub trait Static : Safe + 'static {}
+        pub trait StaticError: Safe + std::error::Error {}
 
-pub trait Static<T>
-where
-    T: 'static
-{}
+        impl<T> Static for T 
+        where
+            T: Safe + 'static
+        {}
 
-pub trait ThreadStatic : ThreadSafe + 'static {}
+        impl<E> StaticError for E
+        where
+            E: Safe + std::error::Error
+        {}
+    }
+
+    pub use safe::Safe;
+
+    pub trait Static<T>
+    where
+        T: 'static
+    {}
+
+    pub trait StaticError: std::error::Error + 'static {}
+}

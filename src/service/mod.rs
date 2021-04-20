@@ -1,42 +1,39 @@
+use std::{
+    str::FromStr,
+};
+
 use routerify as rf;
 use hyper as hp;
 
 use crate::{
-    ThreadStatic,
+    thread,
 };
 
+mod error;
+pub mod path;
 pub mod remote_file;
+pub use error::Error;
 
-#[derive(Debug)]
-pub struct MissingSharedData {
-    pub name: &'static str,
-}
-
-impl MissingSharedData {
-    pub fn new(name: &'static str) -> Self {
-        Self {
-            name,
-        }
-    }
-
-    pub fn from_type<T>() -> Self {
-        Self::new(std::any::type_name::<T>())
-    }
-}
-
-impl std::fmt::Display for MissingSharedData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "data type '{:?}' not found for current service",
-               self.name)
-    }
-}
-
-impl std::error::Error for MissingSharedData {
-}
+type Result<T> = std::result::Result<T, Error>;
 
 pub trait RequestFns: rf::ext::RequestExt {
-    fn must_data<T: ThreadStatic>(&self) -> Result<&T, MissingSharedData> {
-        self.data::<T>().ok_or(MissingSharedData::from_type::<T>())
+    fn must_data<T: thread::safe::Static>(&self) -> Result<&T> {
+        self.data::<T>().ok_or(error::Missing::shared_data::<T>().into())
+    }
+
+    fn must_param<T: Into<String>>(&self, name: T) -> Result<&String> {
+        let s = name.into();
+        self.param(s.clone()).ok_or(error::Missing::Parameter(s).into())
+    }
+
+    fn must_get<S, T>(&self, name: S) -> Result<T>
+    where
+        S: Into<String>,
+        T: FromStr, <T as FromStr>::Err: std::error::Error + 'static
+    {
+        let param = self.must_param(name)?;
+
+        T::from_str(param.as_str()).map_err(|e| Error::Parse(Box::new(e)))
     }
 }
 
