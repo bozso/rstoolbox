@@ -4,7 +4,7 @@ use std::{
 };
 
 use serde_json::Value;
-use tera;
+pub use tera as ttpl;
 use once_cell::sync::Lazy;
 
 use crate::{
@@ -25,6 +25,7 @@ impl<'a> Lookup<'a> {
 
 impl<'a> tpl::Lookup for Lookup<'a> {
     type Key = String;
+    type Error = tpl::Error;
     type Tpl = Template<'a>;
 
     fn get(&mut self, name: Self::Key) -> tpl::Result<Self::Tpl>
@@ -62,7 +63,7 @@ pub struct WithContext<'a> {
 }
 
 impl tpl::Context for tera::Context {
-    type Error = tera::Error;
+    type Error = ttpl::Error;
 
     fn from_value(obj: Value) -> StdResult<Self, Self::Error> {
         tera::Context::from_value(obj)
@@ -82,9 +83,9 @@ impl<'a> tpl::WithContext for WithContext<'a> {
 
 impl<'a> tpl::Template for Template<'a> {
     type Error = Error;
-    type Ctx = tera::Context;
+    type Ctx = ttpl::Context;
 
-    fn render_to(&self, ctx: Self::Ctx, write: impl io::Write) -> Result<(), Self::Error> {
+    fn render_to(&self, ctx: &Self::Ctx, write: impl io::Write) -> Result<(), Self::Error> {
         self.lookup
             .render_to(self.name.as_str(), &ctx, write)
             .map_err(|e| Error::Tera(e))

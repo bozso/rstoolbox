@@ -1,0 +1,11 @@
+{
+    "pattern": "test/**/*.tera",
+    "mode": "tera",
+    "name": "simple/main.tera",
+    "context": {
+        "users": [{
+            "url": "someone.org",
+            "name": "Abel"
+        }]
+    }
+}

@@ -9,7 +9,7 @@ use crate::service::{
     Result, Error
 };
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub enum PathOrData {
     Path(PathBuf),
     Data(String),
