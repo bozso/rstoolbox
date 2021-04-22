@@ -1,4 +1,5 @@
 pub mod cli;
+pub mod handle;
 pub mod geometry;
 pub mod embed;
 pub mod command;

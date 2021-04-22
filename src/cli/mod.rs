@@ -5,7 +5,6 @@ use std::{
 use error_chain::Iter;
 
 pub mod log;
-pub mod handle;
 
 pub trait Run {
     type Error: Error;
