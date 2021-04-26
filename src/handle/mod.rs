@@ -1,6 +1,7 @@
 pub mod attempt;
 pub mod ops;
 pub mod delay;
+pub mod io;
 
 #[derive(PartialEq)]
 pub enum Status {
@@ -8,20 +9,55 @@ pub enum Status {
     Finished
 }
 
-pub trait Error: Sized {
-    fn handle<T, E>(&mut self, result: &Result<T, E>) -> Status;
+pub fn ignore_err<E>(res: Result<(), E>) -> Result<(), E> {
+    match res {
+        Ok(ok) => res,
+        Err(ref err) => Ok(())
+    }
+}
 
-    fn drain_result<T, E, F>(&mut self, func: F) -> Result<T, E>
+pub fn to_unit_err<T, E>(res: Result<T, E>) -> Result<(), E> {
+    match res {
+        Ok(ok) => Ok(()),
+        Err(err) => Err(err),
+    }
+}
+
+pub trait Error {
+    fn handle<E>(&mut self, result: &E) -> Status;
+
+    fn drain_result<T, E, F>(&mut self, mut func: F) -> Result<T, E>
     where
-        F: Fn() -> Result<T, E>
+        F: FnMut() -> Result<T, E>
     {
         loop {
             let res = func();
 
-            if self.handle(&res) == Status::Finished {
-                return res;
+            match res {
+                Ok(ok) => { return Ok(ok); }
+                Err(ref err) => {
+                    if self.handle(err) == Status::Finished {
+                        return res;
+                    }
+                }
             }
         }
+    }
+
+    fn drain_ignore<F, E>(&mut self, mut func: F) -> Result<(), E>
+    where
+        F: FnMut() -> Result<(), E>
+    {
+        ignore_err(self.drain_result(func))
+    }
+}
+
+pub trait UnitError: Error {
+    fn drain_result<F, E>(&mut self, mut func: F) -> Result<(), E>
+    where
+        F: FnMut() -> Result<(), E>
+    {
+        Error::drain_result(self, func)
     }
 }
 
@@ -29,5 +65,5 @@ pub trait Create {
     type Handler: Error;
     type Err: std::error::Error;
 
-    fn create_handler(&self) -> Result<Self::Handler, Self::Err>;
+    fn create(&self) -> Result<Self::Handler, Self::Err>;
 }

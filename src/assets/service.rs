@@ -14,7 +14,7 @@ impl<D: Downloader, E> Service<D, E> {
     pub fn download<'a>(&mut self, task: &'a Task) -> Result<Downloaded<'a>> {
         let root = self.config.paths.get_root(&task.target);
         
-        todo!("implement downloading");
+        //TODO(bozso): implement downloading
 
         Ok(Downloaded {
             root: root,

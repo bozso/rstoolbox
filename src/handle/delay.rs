@@ -62,7 +62,7 @@ impl Delay<NoScale<Duration>> {
 }
 
 impl<S: Scaler<Type=Duration>> Error for Delay<S> {
-    fn handle<T, E>(&mut self, _: &Result<T, E>) -> Status {
+    fn handle<E>(&mut self, _: &E) -> Status {
         std::thread::sleep(self.scaler.scale(self.delay));
         Status::Continue
     }
@@ -72,7 +72,7 @@ impl<S: Default + Scaler<Type=Duration>> Create for Delay<S> {
     type Handler = Self;
     type Err = std::convert::Infallible;
 
-    fn create_handler(&self) -> Result<Self::Handler, Self::Err> {
+    fn create(&self) -> Result<Self::Handler, Self::Err> {
         Ok(Self {
             delay: self.delay,
             scaler: S::default(),

@@ -1,26 +1,35 @@
+/*
 use std::{
     io::{
         self as io, Write
     },
     fs,
 };
+*/
 
 use crate::{
+    /*
     template::{
         self as tpl, Template, Result
     },
-    service::{RequestFns, path},
+    */
+    //service::{RequestFns, path},
+    service::path,
     thread,
 };
 
+/*
 use routerify::{
     self as rf,
 };
+*/
 
+/*
 use hyper::{
     self as hp,
     Body, Request
 };
+*/
 
 pub struct Service<L> {
     lookup: L,
@@ -40,7 +49,7 @@ pub struct Config {
     output: std::path::PathBuf,
 }
 
-type BuildResult<T, E> = rf::Result<rf::Router<T, E>>;
+//type BuildResult<T, E> = rf::Result<rf::Router<T, E>>;
 
 impl<L: thread::Safe> thread::Safe for Service<L> {}
 

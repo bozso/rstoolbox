@@ -12,6 +12,7 @@ use crate::{
 mod error;
 pub mod path;
 pub mod remote_file;
+
 pub use error::Error;
 
 type Result<T> = std::result::Result<T, Error>;

@@ -4,9 +4,6 @@ use std::{
 };
 
 use serde_json::Value;
-use crate::{
-    thread,
-};
 
 pub mod cli;
 

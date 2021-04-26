@@ -29,14 +29,16 @@ impl<I: fmt::Display> fmt::Display for GotZero<I> {
 
 impl<I: fmt::Debug + fmt::Display> error::Error for GotZero<I> {}
 
-pub struct NTimes(num::NonZeroU64);
+pub struct NTimes {
+    n_tries: num::NonZeroU64,
+}
 
 impl NTimes {
     pub fn new(n_tries: u64) -> Result<Self, GotZero<u64>> {
-        Ok(Self(
-            num::NonZeroU64::new(n_tries)
-                .ok_or(GotZero::new(n_tries))?
-        ))
+        Ok(Self{
+            n_tries: num::NonZeroU64::new(n_tries)
+                .ok_or(GotZero::new(n_tries))?,
+        })
     }
 }
 
@@ -44,9 +46,9 @@ impl Create for NTimes {
     type Handler = NTimesImpl;
     type Err = std::convert::Infallible;
 
-    fn create_handler(&self) -> Result<Self::Handler, Self::Err> {
+    fn create(&self) -> Result<Self::Handler, Self::Err> {
         Ok(Self::Handler {
-            n_tries: self.0.get(),
+            n_tries: self.n_tries.get(),
             current: 0,
         })
     }
@@ -58,8 +60,8 @@ pub struct NTimesImpl {
 }
 
 impl Error for NTimesImpl {
-    fn handle<T, E>(&mut self, res: &Result<T, E>) -> Status {
-        if res.is_ok() || self.current >= self.n_tries {
+    fn handle<E>(&mut self, result: &E) -> Status {
+        if self.current >= self.n_tries {
             Status::Finished
         } else {
             self.current += 1;
@@ -71,7 +73,7 @@ impl Error for NTimesImpl {
 fn reset() {
     let n = NTimes::new(5).unwrap();
     {
-        let mut h = n.create_handler().unwrap();
+        let mut h = n.create().unwrap();
         h.drain_result(|| Result::<(),()>::Ok(()));
         assert!(h.current < 5);
     }
