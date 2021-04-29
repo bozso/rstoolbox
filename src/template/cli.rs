@@ -1,10 +1,15 @@
 use std::{
     path::PathBuf,
     convert::TryInto,
-    fs, io
+    fs, io,
+    collections::HashMap,
 };
 
 use structopt as so;
+use anyhow::{
+    self as ah,
+    Result,
+};
 
 use crate::{
     template::{
@@ -12,28 +17,8 @@ use crate::{
         Lookup, Template
     },
     service::path,
+    cli,
 };
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("serde error: {0}")]
-    Serde(#[from] serde_json::Error),
-
-    #[error("service error: {0}")]
-    Service(#[from] crate::service::Error),
-
-    #[error("template error: {0}")]
-    Template(#[from] tpl::Error),
-
-    #[error("io error: {0}")]
-    IO(#[from] io::Error),
-}
-
-impl From<tera::Error> for Error {
-    fn from(e: tera::Error) -> Self {
-        Self::Template(tpl::Error::from(e))
-    }
-}
 
 #[derive(so::StructOpt, serde::Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -53,7 +38,7 @@ impl ToString for Unknown {
 impl std::str::FromStr for Mode {
     type Err = Unknown;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> ::std::result::Result<Self, Self::Err> {
         match s {
             "tera" => Ok(Self::Tera),
             _ => Err(Unknown(s.into()))
@@ -66,79 +51,45 @@ pub struct Main {
     #[structopt(short = "o", long="output")]
     output: PathBuf,
     #[structopt(short = "c", long="config")]
-    config: path::PathOrData,
+    config: Config,
 }
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Config {
     mode: Mode,
     pattern: String,
-    name: String,
+    outputs: HashMap<String, PathBuf>,
+    include: Vec<String>,
     context: Option<serde_json::Value>,
 }
 
+impl std::str::FromStr for Config {
+    type Err = ah::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let read: path::Reader = path::PathOrData::from_str(s)?.try_into()?;
+        serde_json::from_reader(read).map_err(|e| e.into())
+    }
+}
+
+
 /*
-pub trait User {
-    type Error;
-
-    fn use_lookup<L: tpl::Lookup>(&self, lookup: L) -> Result<(), Self::Error>;
+pub struct Runner<L> {
+    lookup: L,
+    config: Config,
+    main: Main,
 }
 
 
-impl Config {
-    pub fn use_lookup<'a, U>(&'a self, user: U) -> Result<(), U::Error>
-    where
-        U: User, <U as User>::Error: From<tera::Error>
-    {
-        user.use_lookup(
-            tpl::tera::Lookup::new(&tera::Tera::new(&self.pattern)?)
-        )
-    }
-}
-
-struct Render<'a> {
-    config: &'a Config,
-}
-
-impl User for Main {
-    type Error = Error;
-
-    fn use_lookup<L>(&self, lookup: L) -> Result<(), Self::Error>
-    where
-        L: tpl::Lookup<Key = std::string::String>,
-    {
-        let writer = fs::File::create(self.output)?;
-
-        let read: path::Reader = self.config.try_into()?;
-        let config: Config = serde_json::from_reader(read)?;
-
-        let ctx = self.config.context.map(
-            |ctx| <<L as tpl::Lookup>::Tpl as tpl::Template>::ctx_from_value(ctx)
-        ).unwrap_or_else(
-            tera::empty_context()
-        )
+impl<L> Runner<L>
+where
+    L: tpl::Lookup<Key = &str>
+{
+    pub fn render(&mut self, key: &str, w: impl io::Write) -> Result<()> {
+        let tpl = self.lookup.get(key)?;
 
 
-
-        lookup.get(self.config.name)?.render_to(ctx, writer)
-    }
-}
-*/
-
-impl Main {
-    pub fn run(self) -> Result<(), Error> {
-        let read: path::Reader = self.config.try_into()?;
-        let config: Config = serde_json::from_reader(read)?;
-
-        let tera = &tera::Tera::new(&config.pattern).map_err(
-            |e| Error::Template(e.into())
-        )?;
-
-        let mut lookup = tpl::tera::Lookup::new(tera);
-        let write = fs::File::create(self.output)?;
-        let tpl = lookup.get(config.name)?;
-
-        let res = match config.context {
+        let res = match self.config.context {
             Some(ctx) => {
                 tpl.render_to(&tera::Context::from_value(ctx)?, write)                
             },
@@ -146,9 +97,62 @@ impl Main {
                 tpl.render_to(tpl::tera::empty_context(), write)                
             }
         };
-        
+
         res.map_err(
             |e| Error::Template(tpl::Error::from(e))
         )
     }
+
+    /*
+    pub fn run(self) -> Result<()> {
+        let write = fs::File::create(self.output)?;
+        let tpl = lookup.get(config.name)?;
+
+        
+    }
+    */
 }
+*/
+
+impl Main {
+    fn render<'a, L>(&self, lookup: &mut L, key: &'a str) -> Result<()>
+    where
+        L: tpl::Lookup<Key = &'a str>,
+    {
+        let tpl = lookup.get(key)?;
+        let file = self.config.outputs.get(key)?;
+        let mut write = io::BufWriter::new(fs::File::create(file)?);
+
+        tpl.render_to(self.config.context, write)
+    }
+}
+
+impl cli::Run for Main {
+    type Error = ah::Error;
+
+    fn run(self) -> Result<()> {
+
+        Ok(())
+    }
+}
+
+/*
+impl std::convert::TryFrom<Main> for Runner<tpl::tera::Lookup> {
+    type Error = Error;
+
+    fn try_from(m: Main) -> ::std::result::Result<Self, Self::Error> {
+        let read: path::Reader = m.config.try_into()?;
+        let config: Config = serde_json::from_reader(read)?;
+
+        let tera = tera::Tera::new(&config.pattern).map_err(
+            |e| Error::Template(e.into())
+        )?;
+
+        Ok(Self {
+            lookup: tpl::tera::Lookup::new(tera),
+            config: config,
+            main: m,
+        })
+    }
+}
+*/

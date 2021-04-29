@@ -7,19 +7,19 @@ use serde_json::Value;
 
 pub mod cli;
 
-mod tera;
+pub mod tera;
 mod service;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("error occurred {0}")]
+    #[error("error occurred")]
     Any(Box<dyn std::error::Error + Sync + Send>),
-    #[error("string parsing failed: {0}")]
+    #[error("string parsing failed")]
     StringParse(#[from] std::string::FromUtf8Error),
-    #[error("failed to query shared data: {0}")]
+    #[error("failed to query shared data")]
     Service(#[from] crate::service::Error),
 
-    #[error("tera template error: {0}")]
+    #[error("tera template error")]
     Tera(#[from] tera::Error)
 }
 
@@ -43,16 +43,12 @@ pub trait Template {
     type Error: std::error::Error + From<std::string::FromUtf8Error>;
     type Ctx: Context;
 
-    fn render_to(&self, ctx: &Self::Ctx, write: impl Write) -> StdResult<(), Self::Error>;
+    fn render_to(&self, ctx: Option<Value>, write: impl Write) -> StdResult<(), Self::Error>;
 
-    fn render(&self, ctx: &Self::Ctx) -> StdResult<String, Self::Error> {
+    fn render(&self, ctx: Option<Value>) -> StdResult<String, Self::Error> {
         let mut s = Vec::<u8>::new();
         self.render_to(ctx, &mut s)?;
         Ok(String::from_utf8(s)?)
-    }
-
-    fn ctx_from_value(obj: serde_json::Value) -> StdResult<Self::Ctx, <Self::Ctx as Context>::Error> {
-        Self::Ctx::from_value(obj)
     }
 }
 
@@ -75,7 +71,7 @@ pub trait Lookup {
     type Error;
     type Tpl: Template;
 
-    fn get(&mut self, key: Self::Key) -> StdResult<Self::Tpl, Self::Error>;
+    fn get(self, key: Self::Key) -> StdResult<Self::Tpl, Self::Error>;
     /*
     fn with_context<C: Context, T: Template>(&mut self, key: Self::Key, ctx: C) -> Result<T> {
         Ok(self.get(key)?.with_context(ctx))

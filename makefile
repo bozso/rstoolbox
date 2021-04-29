@@ -2,7 +2,7 @@ TPL ?= rstoolbox template
 
 .PHONY: test
 
-test:
+test: install
 	$(TPL) --config="config.json" --output="test/out/main.html"
 
 install:

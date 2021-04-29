@@ -1,17 +1,13 @@
-use std::{
-    error::Error as StdError,
-};
-
 use structopt::StructOpt;
-use error_chain::Iter;
 
 use toolbox::{
     template as tpl,
+    cli
 };
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("{0}")]
+    #[error("error while compiling templates")]
     Template(#[from] tpl::cli::Error),
 }
 
@@ -20,7 +16,9 @@ pub enum Main {
     Template(tpl::cli::Main),
 }
 
-impl Main {
+impl cli::Run for Main {
+    type Error = Error;
+
     fn run(self) -> Result<(), Error> {
         match self {
             Self::Template(main) => main.run(),
@@ -28,21 +26,8 @@ impl Main {
     }
 }
 
-pub type OptErr<'a> = Option<&'a(dyn StdError + 'static)>;
-
-pub fn run(m: Main) {
-    match m.run() {
-        Ok(()) => {},
-        Err(ref e) => {
-            eprintln!("{}", e);
-            Iter::new(e.source()).skip(1).last().map(
-                |err| eprintln!("caused by: {}", err)
-            );
-        }
-    };
-}
-
-
 fn main() {
-    run(Main::from_args());
+    let mut runner: cli::Runner = cli::ErrorPrintStrategy::TopAndLast.into();
+
+    runner.run(Main::from_args());
 }

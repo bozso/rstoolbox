@@ -30,38 +30,28 @@ impl<W, HC> Logger<W, HC> {
 
 impl<W, HC: Create> Logger<W, HC> 
 where
-    HC: Create, HC::Err: Into<io::Error>,
+    HC: Create
 {
-    pub fn get_handler(&mut self) -> io::Result<HC::Handler> {
-        self.handler_create.create().map_err(|e| e.into())
-    }
-
-    pub fn use_handler<T, E, F>(&mut self, func: F) -> io::Result<T>
-    where
-        F: Fn(&mut HC::Handler) -> Result<T, E>,
-        E: Into<io::Error>
-    {
-        func(&mut self.get_handler()?).map_err(|e| e.into())
+    pub fn get_handler(&mut self) -> HC::Handler {
+        self.handler_create.create().unwrap()
     }
 }
 
 impl<W, HC> io::Write for Logger<W, HC> 
 where
     W: hio::UnitWrite,
-    HC: Create, HC::Err: Into<io::Error>,
+    HC: Create
 {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let mut h = self.get_handler()?;
-        h.drain_result(|| {
+        self.get_handler().drain_result(|| {
             io::Write::write(&mut self.writer, buf)
         })
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.get_handler()?
-            .drain_result(|| {
-                self.writer.flush().map_err(|e| e.into())
-            })
+        self.get_handler().drain_result(|| {
+            self.writer.flush().map_err(|e| e.into())
+        })
     }
 }
 

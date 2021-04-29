@@ -11,24 +11,24 @@ use crate::{
     template as tpl,
 };
 
-pub struct Lookup<'a> {
-    engine: &'a tera::Tera,
+pub struct Lookup {
+    engine: tera::Tera,
 }
 
-impl<'a> Lookup<'a> {
-    pub fn new(engine: &'a tera::Tera) -> Self {
+impl Lookup {
+    pub fn new(engine: tera::Tera) -> Self {
         Self {
             engine: engine,
         }
     }
 }
 
-impl<'a> tpl::Lookup for Lookup<'a> {
+impl<'a> tpl::Lookup for &'a mut Lookup {
     type Key = String;
     type Error = tpl::Error;
     type Tpl = Template<'a>;
 
-    fn get(&mut self, name: Self::Key) -> tpl::Result<Self::Tpl>
+    fn get(self, name: Self::Key) -> tpl::Result<Self::Tpl>
     {
         Ok(Template{
             name: name, lookup: &self.engine
@@ -36,12 +36,12 @@ impl<'a> tpl::Lookup for Lookup<'a> {
     }
 }
 
-static _empty_context: Lazy<tera::Context> = Lazy::new(|| {
+static EMPTY_CONTEXT: Lazy<tera::Context> = Lazy::new(|| {
     tera::Context::new()
 });
 
 pub fn empty_context() -> &'static tera::Context {
-    Lazy::force(&_empty_context)
+    Lazy::force(&EMPTY_CONTEXT)
 }
 
 
@@ -85,9 +85,18 @@ impl<'a> tpl::Template for Template<'a> {
     type Error = Error;
     type Ctx = ttpl::Context;
 
-    fn render_to(&self, ctx: &Self::Ctx, write: impl io::Write) -> Result<(), Self::Error> {
-        self.lookup
-            .render_to(self.name.as_str(), &ctx, write)
-            .map_err(|e| Error::Tera(e))
+    fn render_to(&self, ctx: Option<Value>, write: impl io::Write) -> Result<(), Self::Error> {
+        let lk = &self.lookup;
+
+        let res = match ctx {
+            Some(val) => {
+                lk.render_to(self.name.as_str(), 
+                             &tera::Context::from_value(val)?,  write)
+            }
+            None => {
+                lk.render_to(self.name.as_str(), empty_context(), write)
+            }
+        };
+        res.map_err(|e| Error::Tera(e))
     }
 }
