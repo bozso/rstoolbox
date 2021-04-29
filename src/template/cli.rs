@@ -8,7 +8,7 @@ use std::{
 use structopt as so;
 use anyhow::{
     self as ah,
-    Result,
+    Result
 };
 
 use crate::{
@@ -16,8 +16,10 @@ use crate::{
         self as tpl,
         Lookup, Template
     },
-    service::path,
+    service::{self, path},
     cli,
+    thread,
+    Get
 };
 
 #[derive(so::StructOpt, serde::Deserialize, Debug)]
@@ -54,23 +56,15 @@ pub struct Main {
     config: Config,
 }
 
-#[derive(serde::Deserialize, Debug)]
-pub struct Config {
-    mode: Mode,
-    pattern: String,
-    outputs: HashMap<String, PathBuf>,
-    include: Vec<String>,
-    context: Option<serde_json::Value>,
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("service error")]
+    Service(#[from] service::Error),
+    #[error("while using serde")]
+    Serde(#[from] serde_json::Error),
 }
 
-impl std::str::FromStr for Config {
-    type Err = ah::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        let read: path::Reader = path::PathOrData::from_str(s)?.try_into()?;
-        serde_json::from_reader(read).map_err(|e| e.into())
-    }
-}
 
 
 /*
@@ -115,15 +109,19 @@ where
 */
 
 impl Main {
-    fn render<'a, L>(&self, lookup: &mut L, key: &'a str) -> Result<()>
+    fn render<'a, L>(&self, lookup: &mut L, key: &'a String) -> Result<()>
     where
-        L: tpl::Lookup<Key = &'a str>,
+        L: tpl::Lookup<Key = &'a str>, 
+           <L as Lookup>::Error: thread::safe::Error + 'static,
+           <<L as Lookup>::Tpl as Template>::Error: thread::safe::Error + 'static,
     {
         let tpl = lookup.get(key)?;
-        let file = self.config.outputs.get(key)?;
-        let mut write = io::BufWriter::new(fs::File::create(file)?);
+        let file = self.config.outputs.must_get(key)?;
+        let write = io::BufWriter::new(fs::File::create(file)?);
 
-        tpl.render_to(self.config.context, write)
+        tpl.render_to(self.config.context, write).map_err(|e| {
+            ah::Error::new(e)
+        })
     }
 }
 

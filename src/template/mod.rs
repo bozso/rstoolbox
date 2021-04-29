@@ -5,10 +5,11 @@ use std::{
 
 use serde_json::Value;
 
-pub mod cli;
+//pub mod cli;
 
 pub mod tera;
 mod service;
+
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
