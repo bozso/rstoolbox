@@ -1,9 +1,6 @@
 use structopt::StructOpt;
 
-use toolbox::{
-    template as tpl,
-    cli
-};
+use toolbox::{cli, template as tpl};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -22,7 +19,8 @@ impl cli::Run for Main {
     fn run(self) -> Result<(), Error> {
         match self {
             Self::Template(main) => main.run(),
-        }.map_err(|e| Error::from(e))
+        }
+        .map_err(|e| Error::from(e))
     }
 }
 

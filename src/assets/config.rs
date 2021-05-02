@@ -1,6 +1,4 @@
-use std::{
-    path::{PathBuf, Path},
-};
+use std::path::{Path, PathBuf};
 
 use crate::assets::Service;
 
