@@ -3,7 +3,7 @@ pub mod cli;
 pub mod command;
 pub mod database;
 pub mod embed;
-pub mod error;
+//pub mod error;
 pub mod geometry;
 pub mod handle;
 pub mod path;

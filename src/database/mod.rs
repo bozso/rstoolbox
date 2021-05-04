@@ -9,8 +9,15 @@ pub trait Like {
     fn remove(&mut self, key: &Self::Key) -> Option<Self::Value>;
 }
 
-pub trait AutoInsert: Like {
-    fn auto_insert(&mut self, val: Self::Value) -> Self::Key;
+pub trait AutoKey: Like {
+    fn get_key(&mut self) -> Self::Key;
+
+    fn auto_insert(&mut self, val: Self::Value) -> Self::Key {
+        let key = self.get_key();
+
+        self.insert(&key, val);
+        key
+    }
 }
 
 pub mod generic {
@@ -33,7 +40,5 @@ pub mod generic {
             self.insert(&key, val);
             key
         }
-
     }
 }
-

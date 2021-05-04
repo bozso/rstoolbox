@@ -1,6 +1,4 @@
-use std::{
-    error::Error,
-};
+use std::error::Error;
 
 use error_chain::Iter;
 
@@ -9,7 +7,7 @@ pub mod log;
 pub trait Run {
     type Error;
 
-    fn run(self) -> Result<(), Self::Error>;
+    fn run(&self) -> Result<(), Self::Error>;
 }
 
 pub trait ErrorPrint {
@@ -24,17 +22,13 @@ pub enum ErrorPrintStrategy {
     Other(&'static mut dyn ErrorPrint),
 }
 
-
-pub type OptErr<'a> = Option<&'a(dyn Error + 'static)>;
+pub type OptErr<'a> = Option<&'a (dyn Error + 'static)>;
 
 impl ErrorPrintStrategy {
-    pub fn take<'a, E: Error>(&self, error: &'a E) -> Option<&'a dyn Error>
-    {
+    pub fn take<'a, E: Error>(&self, error: &'a E) -> Option<&'a dyn Error> {
         match self {
             Self::Top | Self::Chain | Self::Other(_) => None,
-            Self::Last | Self::TopAndLast => {
-                Iter::new(error.source()).last()
-            }
+            Self::Last | Self::TopAndLast => Iter::new(error.source()).last(),
         }
     }
 
@@ -45,14 +39,14 @@ impl ErrorPrintStrategy {
                 if let Some(ref err) = self.take(error) {
                     eprintln!("\n\nCaused by:\t{}", err);
                 }
-            },
+            }
             Self::Chain => {
                 eprintln!("\n{}", error);
                 if let Some(cause) = error.source() {
                     eprint!("\n\nCaused by:");
-                    Iter::new(Some(cause)).for_each(
-                        |e| { let _ = eprintln!("\t{}", e); }
-                    )
+                    Iter::new(Some(cause)).for_each(|e| {
+                        let _ = eprintln!("\t{}", e);
+                    })
                 }
             }
             Self::Other(other) => other.print_error(error),
@@ -66,9 +60,7 @@ pub struct Runner {
 
 impl From<ErrorPrintStrategy> for Runner {
     fn from(e: ErrorPrintStrategy) -> Self {
-        Self {
-            strategy: e,
-        }
+        Self { strategy: e }
     }
 }
 
@@ -79,8 +71,8 @@ impl Runner {
         R::Error: Error,
     {
         match runnable.run() {
-            Ok(()) => {},
-            Err(e) => self.strategy.print_error(&e)
+            Ok(()) => {}
+            Err(e) => self.strategy.print_error(&e),
         }
     }
 }

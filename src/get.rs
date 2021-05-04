@@ -1,13 +1,23 @@
-use std::{
-    fmt, error,
-    collections::HashMap,
-};
+use std::{collections::HashMap, error, fmt, hash};
+
+pub trait OkOrr<T>: Sized {
+    fn ok_or<E>(self, err: E) -> Result<T, E>;
+
+    fn must_get<S: Into<String>>(self, key: S) -> Result<T, KeyError> {
+        self.ok_or(KeyError { key: key.into() })
+    }
+}
+
+impl<T> OkOrr<T> for std::option::Option<T> {
+    fn ok_or<E>(self, err: E) -> Result<T, E> {
+        std::option::Option::ok_or(self, err)
+    }
+}
 
 #[derive(Debug)]
 pub struct KeyError {
     key: String,
 }
-
 
 impl KeyError {
     fn from<D: fmt::Debug>(d: &D) -> Self {
@@ -38,12 +48,13 @@ pub trait Get {
 
 impl<K, V, S> Get for HashMap<K, V, S>
 where
-    K: fmt::Debug,
+    K: fmt::Debug + hash::Hash + std::cmp::Eq,
+    S: hash::BuildHasher,
 {
     type Key = K;
     type Value = V;
 
     fn get(&self, key: &Self::Key) -> Option<&Self::Value> {
-        Self::get(self, key)
+        HashMap::get(self, key)
     }
 }

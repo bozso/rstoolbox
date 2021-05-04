@@ -5,7 +5,7 @@ use toolbox::{cli, template as tpl};
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("error while compiling templates")]
-    Template(#[from] tpl::cli::Error),
+    Template(#[from] tpl::Error),
 }
 
 #[derive(StructOpt, Debug)]
@@ -16,7 +16,7 @@ pub enum Main {
 impl cli::Run for Main {
     type Error = Error;
 
-    fn run(self) -> Result<(), Error> {
+    fn run(&self) -> Result<(), Error> {
         match self {
             Self::Template(main) => main.run(),
         }
