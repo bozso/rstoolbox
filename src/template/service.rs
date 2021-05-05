@@ -1,44 +1,31 @@
-/*
 use std::{
-    io::{
-        self as io, Write
-    },
+    io,
     fs,
+    convert::TryInto,
 };
-*/
 
 use crate::{
-    /*
-    template::{
-        self as tpl, Template, Result
-    },
-    */
-    //service::{RequestFns, path},
-    service::path,
+    template::{Engine, Result, Error}, 
+    service::{RequestFns, path},
     thread,
 };
 
-/*
 use routerify::{
     self as rf,
 };
-*/
 
-/*
 use hyper::{
-    self as hp,
-    Body, Request
+    Body, Request, Response, body::{HttpBody, Buf}
 };
-*/
 
-pub struct Service<L> {
-    lookup: L,
+pub struct Service<E> {
+    engine: E,
 }
 
-impl<L> Service<L> {
-    pub fn new(lookup: L) -> Self {
+impl<E> Service<E> {
+    pub fn new(engine: E) -> Self {
         Self {
-            lookup: lookup,
+            engine: engine,
         }
     }
 }
@@ -49,45 +36,42 @@ pub struct Config {
     output: std::path::PathBuf,
 }
 
-//type BuildResult<T, E> = rf::Result<rf::Router<T, E>>;
+type BuildResult<T, E> = rf::Result<rf::Router<T, E>>;
 
-impl<L: thread::Safe> thread::Safe for Service<L> {}
+impl<E: thread::Safe> thread::Safe for Service<E> {}
 
-/*
-impl<L: tpl::Lookup + thread::safe::Static> Service<L> {
-    pub fn router(self) -> BuildResult<hp::Body, tpl::Error> {
+
+impl<E> Service<E>
+where
+    E: Engine<Key = String> + thread::safe::Static,
+{
+    pub fn router(self) -> BuildResult<Body, Error> {
         rf::Router::builder()
             //.data(Arc::new(Mutex::new(self)))
             .data(self)
-            .post("/render", Self::render_template)
+            .post("/render/:key", Self::render_template)
             .build()
     }
 
-    async fn render_template(req: Request<Body>) -> Result<hp::Response<Body>> {
-        let service = req.must_data::<Self>()?;
-        let name = req.must_param("name")?;
-        let (_, body) = req.into_parts();
-        let config: Config = serde_json::from_slice(&body)?;
 
-        let tpl = config.context.map(
-            |ctx| service.lookup.with_context(name, ctx)
-        ).unwrap_or_else(
-            || service.lookup.get(name)?
-        );
+    async fn render_template(mut req: Request<Body>) -> Result<Response<Body>> {
+        let config: Config = serde_json::from_reader(
+            req.body_mut().data().await.unwrap().unwrap().reader()
+        )?;
+
+        let ctx = if let Some(context) = config.context {
+            let reader: path::Reader = context.try_into()?;
+            Some(serde_json::from_reader(reader)?)
+        } else {
+            None
+        };
 
         let writer = io::BufWriter::new(fs::File::create(config.output)?);
-        tpl.render_to(writer)?;
 
-        Ok(hp::Response::new(hp::Body::from(config.output.to_string_lossy())))
-    }
+        let service = req.must_data::<Self>()?;
+        let key = req.must_param("key")?;
+        service.engine.render_to(ctx, key, writer).map_err(|e| rf::Error::new(e.to_string()))?;
 
-    pub fn render_to(&mut self, key: &L::Key, write: impl Write) -> Result<()> {
-        let tpl = self.lookup.get(key)?;
-
-        tpl.render_to(write)?;
-
-        Ok(())
+        Ok(Response::new(Body::from("OK")))
     }
 }
-*/
-

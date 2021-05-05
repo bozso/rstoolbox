@@ -1,5 +1,6 @@
 use std::{io, result::Result as StdResult};
 
+use routerify as rf;
 use serde_json::Value;
 
 pub mod cli;
@@ -9,9 +10,9 @@ pub mod tera;
 
 pub use config::Config;
 
-// mod service;
+mod service;
 
-use crate::{service, KeyError};
+use crate::{service as serv, KeyError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -25,13 +26,16 @@ pub enum Error {
     StringParse(#[from] std::string::FromUtf8Error),
 
     #[error("failed to query shared data")]
-    Service(#[from] service::Error),
+    Service(#[from] serv::Error),
 
     #[error("tera template error")]
     Tera(#[from] tera::Error),
 
     #[error("serde error")]
     Serde(#[from] serde_json::Error),
+
+    #[error("routing error")]
+    Router(#[from] rf::Error),
 }
 
 unsafe impl Send for Error {}

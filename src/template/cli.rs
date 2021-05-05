@@ -56,7 +56,7 @@ impl cli::Run for Main {
     type Error = tpl::Error;
 
     fn run(&self) -> Result<(), Self::Error> {
-        let r: Runner<'_> = self.try_into()?;
+        let r: Runner = self.try_into()?;
 
         for key in self.config.outputs.keys() {
             r.render(key)?;

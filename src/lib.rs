@@ -14,7 +14,7 @@ pub mod testing;
 
 mod get;
 
-pub use get::{Get, KeyError};
+pub use get::{Get, KeyError, OkOrr};
 
 pub mod thread {
     pub mod safe {
