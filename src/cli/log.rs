@@ -1,17 +1,13 @@
-use std::{
-    io,
-};
+use std::io;
 
-use crate::{
-    handle::{attempt, Create, Error, io as hio},
-};
+use crate::handle::{attempt, io as hio, Create, Error};
 
 pub enum Level {
     Info,
     Debug,
     Warning,
     Error,
-    Fatal
+    Fatal,
 }
 
 pub struct Logger<W, HC> {
@@ -28,37 +24,33 @@ impl<W, HC> Logger<W, HC> {
     }
 }
 
-impl<W, HC: Create> Logger<W, HC> 
+impl<W, HC: Create> Logger<W, HC>
 where
-    HC: Create
+    HC: Create,
 {
     pub fn get_handler(&mut self) -> HC::Handler {
         self.handler_create.create().unwrap()
     }
 }
 
-impl<W, HC> io::Write for Logger<W, HC> 
+impl<W, HC> io::Write for Logger<W, HC>
 where
     W: hio::UnitWrite,
-    HC: Create
+    HC: Create,
 {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.get_handler().drain_result(|| {
-            io::Write::write(&mut self.writer, buf)
-        })
+        self.get_handler()
+            .drain_result(|| io::Write::write(&mut self.writer, buf))
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.get_handler().drain_result(|| {
-            self.writer.flush().map_err(|e| e.into())
-        })
+        self.get_handler()
+            .drain_result(|| self.writer.flush().map_err(|e| e.into()))
     }
 }
 
 fn test_attempt() {
-    let mut l = Logger::new(
-        io::stdout(), attempt::NTimes::new(5).unwrap()
-    );
+    let mut l = Logger::new(io::stdout(), attempt::NTimes::new(5).unwrap());
 
     let data = ['a', 'b', 'c'].iter().map(|&c| c as u8).collect::<Vec<_>>();
 
