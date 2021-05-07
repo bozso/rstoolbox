@@ -1,7 +1,10 @@
 use crate::assets::{
-    //Downloader, Extractor, Task, Config, Result,
-    Downloader, Task, Config, Result,
     task::Downloaded,
+    Config,
+    //Downloader, Extractor, Task, Config, Result,
+    Downloader,
+    Result,
+    Task,
 };
 
 pub struct Service<D, E> {
@@ -13,7 +16,7 @@ pub struct Service<D, E> {
 impl<D: Downloader, E> Service<D, E> {
     pub fn download<'a>(&mut self, task: &'a Task) -> Result<Downloaded<'a>> {
         let root = self.config.paths.get_root(&task.target);
-        
+
         //TODO(bozso): implement downloading
 
         Ok(Downloaded {
@@ -22,6 +25,5 @@ impl<D: Downloader, E> Service<D, E> {
         })
     }
 
-    //pub fn extract_entry(&mut self, 
+    //pub fn extract_entry(&mut self,
 }
-

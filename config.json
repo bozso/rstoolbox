@@ -1,7 +1,9 @@
 {
     "pattern": "test/**/*.tera",
     "mode": "tera",
-    "name": "simple/main.tera",
+    "outputs": {
+        "simple/main.tera": "test/out/main.html"
+    },
     "context": {
         "users": [{
             "url": "someone.org",

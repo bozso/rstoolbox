@@ -42,7 +42,7 @@ impl<'a, H: Error> Error for IgnoreLast<'a, H> {
 }
 
 impl<'a, H: Error> UnitError for IgnoreLast<'a, H> {
-    fn drain_result<F, E>(&mut self, mut func: F) -> Result<(), E>
+    fn drain_result<F, E>(&mut self, func: F) -> Result<(), E>
     where
         F: FnMut() -> Result<(), E>,
     {

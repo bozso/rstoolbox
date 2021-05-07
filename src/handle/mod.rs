@@ -11,14 +11,14 @@ pub enum Status {
 
 pub fn ignore_err<E>(res: Result<(), E>) -> Result<(), E> {
     match res {
-        Ok(ok) => res,
-        Err(ref err) => Ok(()),
+        Ok(_) => res,
+        Err(_) => Ok(()),
     }
 }
 
 pub fn to_unit_err<T, E>(res: Result<T, E>) -> Result<(), E> {
     match res {
-        Ok(ok) => Ok(()),
+        Ok(_) => Ok(()),
         Err(err) => Err(err),
     }
 }
@@ -46,7 +46,7 @@ pub trait Error {
         }
     }
 
-    fn drain_ignore<F, E>(&mut self, mut func: F) -> Result<(), E>
+    fn drain_ignore<F, E>(&mut self, func: F) -> Result<(), E>
     where
         F: FnMut() -> Result<(), E>,
     {
@@ -55,7 +55,7 @@ pub trait Error {
 }
 
 pub trait UnitError: Error {
-    fn drain_result<F, E>(&mut self, mut func: F) -> Result<(), E>
+    fn drain_result<F, E>(&mut self, func: F) -> Result<(), E>
     where
         F: FnMut() -> Result<(), E>,
     {

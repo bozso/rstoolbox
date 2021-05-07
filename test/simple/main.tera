@@ -1,7 +1,7 @@
 <title>{% block title %}{% endblock title %}</title>
 <ul>
 
-{{ set asd = "asd" *}
+{% set asd = "asd" %}
 
 {% for user in users -%}
   <li><a href="{{ user.url }}">{{ user.name }}</a></li>

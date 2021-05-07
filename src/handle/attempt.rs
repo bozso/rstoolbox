@@ -56,7 +56,7 @@ pub struct NTimesImpl {
 }
 
 impl Error for NTimesImpl {
-    fn handle<E>(&mut self, result: &E) -> Status {
+    fn handle<E>(&mut self, _: &E) -> Status {
         if self.current >= self.n_tries {
             Status::Finished
         } else {
@@ -70,7 +70,7 @@ fn reset() {
     let n = NTimes::new(5).unwrap();
     {
         let mut h = n.create().unwrap();
-        h.drain_result(|| Result::<(), ()>::Ok(()));
+        h.drain_result(|| Result::<(), ()>::Ok(())).unwrap();
         assert!(h.current < 5);
     }
 }

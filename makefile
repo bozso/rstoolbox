@@ -3,7 +3,7 @@ TPL ?= rstoolbox template
 .PHONY: test
 
 test: install
-	$(TPL) --config="config.json" --output="test/out/main.html"
+	$(TPL) --config="config.json"
 
 install:
 	cargo build --release
