@@ -1,18 +1,18 @@
 pub mod attempt;
-pub mod ops;
 pub mod delay;
 pub mod io;
+pub mod ops;
 
 #[derive(PartialEq)]
 pub enum Status {
     Continue,
-    Finished
+    Finished,
 }
 
 pub fn ignore_err<E>(res: Result<(), E>) -> Result<(), E> {
     match res {
         Ok(ok) => res,
-        Err(ref err) => Ok(())
+        Err(ref err) => Ok(()),
     }
 }
 
@@ -28,13 +28,15 @@ pub trait Error {
 
     fn drain_result<T, E, F>(&mut self, mut func: F) -> Result<T, E>
     where
-        F: FnMut() -> Result<T, E>
+        F: FnMut() -> Result<T, E>,
     {
         loop {
             let res = func();
 
             match res {
-                Ok(ok) => { return Ok(ok); }
+                Ok(ok) => {
+                    return Ok(ok);
+                }
                 Err(ref err) => {
                     if self.handle(err) == Status::Finished {
                         return res;
@@ -46,7 +48,7 @@ pub trait Error {
 
     fn drain_ignore<F, E>(&mut self, mut func: F) -> Result<(), E>
     where
-        F: FnMut() -> Result<(), E>
+        F: FnMut() -> Result<(), E>,
     {
         ignore_err(self.drain_result(func))
     }
@@ -55,7 +57,7 @@ pub trait Error {
 pub trait UnitError: Error {
     fn drain_result<F, E>(&mut self, mut func: F) -> Result<(), E>
     where
-        F: FnMut() -> Result<(), E>
+        F: FnMut() -> Result<(), E>,
     {
         Error::drain_result(self, func)
     }

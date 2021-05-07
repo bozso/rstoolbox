@@ -1,29 +1,20 @@
-use std::{
-    time::{Duration},
-    marker::PhantomData,
-};
+use std::{marker::PhantomData, time::Duration};
 
-
-use crate::{
-    handle::{Create, Error, Status},
-};
+use crate::handle::{Create, Error, Status};
 
 pub trait Scaler {
     type Type;
 
     fn scale(&self, var: Self::Type) -> Self::Type;
-
 }
 
 pub struct NoScale<T> {
-    mark: PhantomData<T>
+    mark: PhantomData<T>,
 }
 
 impl<T> NoScale<T> {
     pub fn new() -> Self {
-        Self {
-            mark: PhantomData,
-        }
+        Self { mark: PhantomData }
     }
 }
 
@@ -61,14 +52,14 @@ impl Delay<NoScale<Duration>> {
     }
 }
 
-impl<S: Scaler<Type=Duration>> Error for Delay<S> {
+impl<S: Scaler<Type = Duration>> Error for Delay<S> {
     fn handle<E>(&mut self, _: &E) -> Status {
         std::thread::sleep(self.scaler.scale(self.delay));
         Status::Continue
     }
 }
 
-impl<S: Default + Scaler<Type=Duration>> Create for Delay<S> {
+impl<S: Default + Scaler<Type = Duration>> Create for Delay<S> {
     type Handler = Self;
     type Err = std::convert::Infallible;
 

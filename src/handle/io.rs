@@ -1,10 +1,6 @@
-use std:: {
-    io,
-};
+use std::io;
 
-use crate::{
-    handle,
-};
+use crate::handle;
 
 pub trait UnitWrite: io::Write {
     fn write(&mut self, data: &[u8]) -> io::Result<()> {

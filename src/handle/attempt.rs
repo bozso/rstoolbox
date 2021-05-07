@@ -1,10 +1,6 @@
-use std::{
-    num, fmt, error,
-};
+use std::{error, fmt, num};
 
-use crate::{
-    handle::{Error, Status, Create},
-};
+use crate::handle::{Create, Error, Status};
 
 #[derive(Debug)]
 pub struct GotZero<I> {
@@ -13,18 +9,19 @@ pub struct GotZero<I> {
 
 impl<I> GotZero<I> {
     fn new(num: I) -> Self {
-        Self {
-            num: num,
-        }
+        Self { num: num }
     }
 }
 
 impl<I: fmt::Display> fmt::Display for GotZero<I> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "expected non zero {} value, got {}",
-                std::any::type_name::<I>(), self.num)
+        write!(
+            f,
+            "expected non zero {} value, got {}",
+            std::any::type_name::<I>(),
+            self.num
+        )
     }
-
 }
 
 impl<I: fmt::Debug + fmt::Display> error::Error for GotZero<I> {}
@@ -35,9 +32,8 @@ pub struct NTimes {
 
 impl NTimes {
     pub fn new(n_tries: u64) -> Result<Self, GotZero<u64>> {
-        Ok(Self{
-            n_tries: num::NonZeroU64::new(n_tries)
-                .ok_or(GotZero::new(n_tries))?,
+        Ok(Self {
+            n_tries: num::NonZeroU64::new(n_tries).ok_or(GotZero::new(n_tries))?,
         })
     }
 }
@@ -74,10 +70,9 @@ fn reset() {
     let n = NTimes::new(5).unwrap();
     {
         let mut h = n.create().unwrap();
-        h.drain_result(|| Result::<(),()>::Ok(()));
+        h.drain_result(|| Result::<(), ()>::Ok(()));
         assert!(h.current < 5);
     }
-
 }
 
 #[cfg(test)]
