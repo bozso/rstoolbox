@@ -25,6 +25,7 @@ impl cli::Run for Main {
 }
 
 fn main() {
+    let a;
     let mut runner: cli::Runner = cli::ErrorPrintStrategy::TopAndLast.into();
 
     runner.run(Main::from_args());

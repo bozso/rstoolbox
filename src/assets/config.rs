@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+asd
 use crate::assets::Service;
 
 pub struct Paths {
